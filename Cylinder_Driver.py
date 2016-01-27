@@ -8,6 +8,17 @@ import ogr
 import subprocess
 import shlex
 import numpy.random as rand
+import numpy as np
+
+def colAvg(inA):
+    localList = []
+    rowList = []
+    lenRow = len( inA[0] )
+    for i in range( lenRow ):
+        for rows in inA:
+             localList.append( rows[i] )
+        rowList.append(localList)
+    return rowList
 
 def run_and_return(cmdSrc, cmdDest = ""):
     """Run a system command and return the output"""
@@ -124,6 +135,60 @@ def getListOIDs(inputLayer, dictFields, fieldName = "OBECTID"):
 
 
 
+
+def mpMetricsCylinder(inTuple):
+    '''
+    '''
+    OID, N = inTuple
+    print "starting "+str(inTuple)
+    os.chdir(r"Z:\\plot"+str(OID))
+    # factor this into module
+    dictCommands = { "clippoly" : r"C:\\Apps\\FUSION\\PolyClipData.exe",
+                         "cloudmetrics" : r"C:\\Apps\\FUSION\\cloudmetrics.exe",
+                         "clipdata" : r"C:\\Apps\\FUSION\\ClipData.exe"        }       
+    newFolder =  r"Z:\\plot"+str(OID)
+    clippedBlock = newFolder+r"\\clip.lda" 
+    thisShp = newFolder+r"\\"+"plot"+str(OID)+"_"+str(N)+".shp"
+    thisLDA = newFolder+r"\\"+"plot"+str(OID)+"_"+str(N)+".lda"
+    outputCSV = "output"+str(OID)+"_"+str(N)+".csv"
+    # ####
+    listToClean = [thisLDA,outputCSV]
+    for items in listToClean:
+        if os.path.isfile( items ): os.remove( items )
+    
+    if os.path.isfile( outputCSV ): os.remove( outputCSV )
+    
+    cmdSrc = dictCommands["clippoly"]+r" /index "+" "+thisShp+" "+thisLDA+" "+clippedBlock
+    print run_and_return(cmdSrc)          
+
+
+    cmdSrc = dictCommands["cloudmetrics"]+r" "+ thisLDA +" " + outputCSV
+    print run_and_return(cmdSrc)
+ 
+    f = open(outputCSV, "r")
+    k = 0
+    
+    dictHeader = {}
+    listLines = []
+    
+    for lines in f:
+        print lines
+        if k == 0 : 
+            listLine = lines.replace(" ","_").rstrip().split(",")
+            for i in range(len(listLine)):
+                dictHeader[i] = listLine[i]
+                print listLine[i]
+            k= k+1
+            listLines.append(listLine)
+            #print listLine
+        elif k == 1:
+            listLine = lines.split(",")
+            listLines.append(listLine)
+            goodLine= listLine
+            
+    
+    return goodLine
+
 def oidCloudMetric(inTuple, BufferDist = 10, sdX = 1., sdY = 1., nSamples = 100, dist = "Normal" ):
     
     import csv
@@ -210,63 +275,36 @@ def oidCloudMetric(inTuple, BufferDist = 10, sdX = 1., sdY = 1., nSamples = 100,
     print run_and_return(cmdSrc)    
     
     #Call MP on   
-    tupleOidN = ( 1, 0)
     
-    def mpMetricsCylinder(tupelOidN):
-        '''
-        '''
-        OID, N = tupleOidN
-        
-        # factor this into function
-        newFolder =  r"Z:\\plot"+str(OID)
-        clippedBlock = newFolder+r"\\clip.lda" 
-        thisShp = newFolder+r"\\"+"plot"+str(OID)+"_"+str(N)+".shp"
-        thisLDA = newFolder+r"\\"+"plot"+str(OID)+"_"+str(N)+".lda"
-        outputCSV = "output"+str(OID)+"_"+str(N)+".csv"
-        # ####
-        listToClean = [thisLDA,outputCSV]
-        for items in listToClean:
-            if os.path.isfile( items ): os.remove( items )
-        
-        if os.path.isfile( outputCSV ): os.remove( outputCSV )
-        
-        cmdSrc = dictCommands["clippoly"]+r" /index "+" "+thisShp+" "+thisLDA+" "+clippedBlock
-        print run_and_return(cmdSrc)          
+    
 
     
-        cmdSrc = dictCommands["cloudmetrics"]+r" "+ thisLDA +" " + outputCSV
-        print run_and_return(cmdSrc)
-     
-        f = open(outputCSV, "r")
-        k = 0
-        
-        dictHeader = {}
-        listLines = []
-        
-        for lines in f:
-            print lines
-            if k == 0 : 
-                listLine = lines.replace(" ","_").rstrip().split(",")
-                for i in range(len(listLine)):
-                    dictHeader[i] = listLine[i]
-                    print listLine[i]
-                k= k+1
-                listLines.append(listLine)
-                #print listLine
-            elif k > 1:
-                listLine = lines.split(",")
-                listLines.append(listLine)
-                goodLine= listLine
-                
-        
-        return goodLine
-    
     os.chdir(newFolder)
-    print mpMetricsCylinder( tupleOidN )
-    listToClean = [thisShp,thisLDA,outputCSV,clippedBlock]
-    for items in listToClean:
-        if os.path.isfile( items ): os.remove( items )    
+    
+    # prep the list
+    listRun = []
+    for items in range(nSamples):
+        listRun.append( (OID,items) )   
+    
+    print listRun
+    #now run the pool
+    p = Pool(10)
+    #res = p.map(mpMetricsCylinder, [(1,1),(1,2),(1,3),(1,4)] )    
+    res = p.map(mpMetricsCylinder, listRun)
+    outputs = [result for result in res]
+    print outputs
+    
+    #print mpMetricsCylinder( tupleOidN )
+    #listToClean = [thisShp,thisLDA,outputCSV,clippedBlock]
+    #for items in listToClean:
+    #    if os.path.isfile( items ): 
+    #        try:
+    #            os.remove( items ) 
+    #        except:
+    #            pass
     os.chdir(r"..")
+    
+    return outputs
     
 def main():
     # ##
@@ -327,16 +365,20 @@ def main():
 
 
     #listOIDs = getListOIDs(layer,dictFields)
-
+    
+    thisPlot = 0    
+    
     #with Pool(10) as p:
     p = Pool(10)
     # ptCloudMetric(feature, dictFields, ogrTypedFieldVal, layerDefinition, ptWKTtoSHP, dictCommands):
     #partialCM = partial(oidCloudMetric, layerDefinition )
-    res = oidCloudMetric( ptWKTs[0] )
-    outputs = [result[0] for result in res]
+    res = oidCloudMetric( ptWKTs[thisPlot] )
     
-    print outputs
+    #print outputs
     print res
+    
+    outfile = open(r"Z://output"+str(ptWKTs[thisPlot]))    
+    
     
     #p.map(oidCloudMetric, ptWKTs)
 
