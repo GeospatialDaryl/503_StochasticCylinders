@@ -1,0 +1,9 @@
+#!wing
+#!version=5.0
+##################################################################
+# Wing IDE project file                                          #
+##################################################################
+[project attributes]
+proj.file-list = [loc('022_stochastic_cylinders.py'),
+                  loc('Cylinder_Driver.py')]
+proj.file-type = 'shared'
