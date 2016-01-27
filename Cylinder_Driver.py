@@ -9,6 +9,7 @@ import subprocess
 import shlex
 import numpy.random as rand
 import numpy as np
+#from __future__  import print
 
 def colAvg(inA):
     localList = []
@@ -369,7 +370,7 @@ def main():
     thisPlot = 0    
     
     #with Pool(10) as p:
-    p = Pool(10)
+    #p = Pool(10)
     # ptCloudMetric(feature, dictFields, ogrTypedFieldVal, layerDefinition, ptWKTtoSHP, dictCommands):
     #partialCM = partial(oidCloudMetric, layerDefinition )
     res = oidCloudMetric( ptWKTs[thisPlot] )
@@ -377,10 +378,14 @@ def main():
     #print outputs
     print res
     
-    outfile = open(r"Z://output"+str(ptWKTs[thisPlot]))    
-    
-    
-    #p.map(oidCloudMetric, ptWKTs)
+    #write out output
+    outfile = open(r"Z://output"+str(ptWKTs[thisPlot][0])+".csv","wb")
+    print >>outfile , "DataFile,FileTitle,Total_return_count,Return_1_count,Return_2_count,Return_3_count,Return_4_count,Return_5_count,Return_6_count,Return_7_count,Return_8_count,Return_9_count,Other_return_count,Elev_minimum,Elev_maximum,Elev_mean,Elev_mode,Elev_stddev,Elev_variance,Elev_CV,Elev_IQ,Elev_skewness,Elev_kurtosis,Elev_AAD,Elev_MAD_median,Elev_MAD_mode,Elev_L1,Elev_L2,Elev_L3,Elev_L4,Elev_L_CV,Elev_L_skewness,Elev_L_kurtosis,Elev_P01,Elev_P05,Elev_P10,Elev_P20,Elev_P25,Elev_P30,Elev_P40,Elev_P50,Elev_P60,Elev_P70,Elev_P75,Elev_P80,Elev_P90,Elev_P95,Elev_P99,Canopy_relief_ratio,Elev_SQRT_mean_SQ,Elev_CURT_mean_CUBE,Int_minimum,Int_maximum,Int_mean,Int_mode,Int_stddev,Int_vari30,Elev_P40,Elev_P50,Elev_P60,Elev_P70,Elev_P75,Elev_P80,Elev_P90,Elev_P95,Elev_P99,Canopy_relief_ratio,Elev_SQRT_mean_SQ,Elev_CURT_mean_CUBE,Int_minimum,Int_maximum,Int_mean,Int_mode,Int_stddev,Int_variance,Int_CV,Int_IQ,Int_skewness,Int_kurtosis,Int_AAD,Int_L1,Int_L2,Int_L3,Int_L4,Int_L_CV,Int_L_skewness,Int_L_kurtosis,Int_P01,Int_P05,Int_P10,Int_P20,Int_P25,Int_P30,Int_P40,Int_P50,Int_P60,Int_P70,Int_P75,Int_P80,Int_P90,Int_P95,Int_P99"
+    for lines in res:
+        thisStr = ","
+        joined = thisStr.join(lines)
+        outfile.write(joined)
+    outfile.close()    
 
     logging.info('Took %s seconds', time() - ts)
 
